@@ -1,11 +1,12 @@
 const express = require('express');
 const userRouter = express.Router();
 
-const { signUp, signin, updateProfile, addFriend, getAllFriends, searchUsers } = require('../controller/user-controller');
+const { signUp, signin, updateProfile, addFriend, getAllFriends, searchUsers, getProfileDetails } = require('../controller/user-controller');
 const verifyToken = require('../middleware/verifyToken');
 
 userRouter.post("/api/signup", signUp);
 userRouter.post("/api/signin", signin);
+userRouter.get("/api/get-profile", [verifyToken] ,getProfileDetails);
 userRouter.patch("/api/update-profile", [verifyToken] ,updateProfile);
 userRouter.post("/api/add-friend", [verifyToken] , addFriend);
 //NOTE - get friends of current logged in user
