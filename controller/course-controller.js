@@ -48,31 +48,32 @@ const createCourse = async (req, res) => {
   }
 };
 
+//NOTE - Get Courses for current user
 const getAllCourses = async (req, res) => {
   try {
-    
-  } catch (e) {
-    console.error(e);
-    return res.status(400).send({
-      success: false,
-      message: "Something went wrong",
-      data: null
+    // Assuming you have an authentication middleware that attaches the current user to the request
+    const {user} = req.user;
+
+    // Find the user by ID and populate the courses field
+    const userWithCourses = await users.findById(user._id).populate('courses');
+
+    if (!userWithCourses) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+      status: true,
+      data: { courses: userWithCourses.courses },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error fetching user courses',
+      error: error.toString(),
     });
   }
 };
-
-const getCourseById = async (req, res) => {
-    try {
-    
-    } catch (e) {
-      console.error(e);
-      return res.status(400).send({
-        success: false,
-        message: "Something went wrong",
-        data: null
-      });
-    }
-}
 
 const updateCourseById = async (req, res) => {
     try {
@@ -104,4 +105,4 @@ String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
-module.exports = { createCourse, getAllCourses, getCourseById, updateCourseById, deleteCourseById };
+module.exports = { createCourse, getAllCourses, updateCourseById, deleteCourseById };

@@ -190,19 +190,13 @@ const getAllFriends = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
         // Populate the friends data
-        const friends = await users.find({ _id: { $in: user.friends } });
-
-        res.status(200).json({
-            status: true,
-            data: { 
-              user,
-              friends
-             },
-        });
+    const friends = await users.find({ _id: { $in: user.friends } });
 
     res.status(200).json({
-      status: true,
-      data: { user },
+        status: true,
+        data: { 
+          friends
+        },
     });
   } catch (error) {
     console.error(error);
