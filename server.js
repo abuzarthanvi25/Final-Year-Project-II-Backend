@@ -4,7 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 const port = process.env.PORT;
 
-require('./config/db');
+const { connectDB } = require('./config/db');
 const { socketInstance } = require("./config/socket")
 const userRouter = require('./router/user-router');
 const courseRouter = require('./router/course-router');
@@ -13,6 +13,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use([userRouter, courseRouter])
+
+
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`Server running at port http://localhost:${port}`);
+  });
+})
 
 // socketInstance.on("connection", socket => {
 
@@ -32,7 +39,3 @@ app.use([userRouter, courseRouter])
 //   });
 
 // })
-
-app.listen(port, () => {
-  console.log(`Server running at port http://localhost:${port}`);
-});
