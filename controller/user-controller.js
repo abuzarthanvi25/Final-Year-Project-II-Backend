@@ -93,6 +93,38 @@ const signin = async (req, res) => {
   }
 };
 
+const getProfileDetails = async (req, res) => {
+  try {
+    const {user} = req.user;
+
+    const userDetails = await users.findById({_id: user._id}).populate('friends').populate('courses');
+    
+    if(!user || !userDetails){
+      return res.status(400).send({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).send({
+      status: true,
+      message: "User Profile get statusfuly",
+      data: {
+        user: userDetails
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(400).send({
+      status: false,
+      message: "Something went wrong",
+      data: null,
+      error: error.toString()
+    });
+  }
+}
+
 const updateProfile = async (req, res) => {
   try {
     const {user} = req.user;
@@ -140,7 +172,7 @@ const updateProfile = async (req, res) => {
 
 const addFriend = async (req, res) => {
   try {
-    const { friend_id } = req.query;
+    const { friend_id } = req.body;
     const { user } = req.user;
 
     const currentUser = await users.findOne({ _id: user?._id });
@@ -210,7 +242,7 @@ const getAllFriends = async (req, res) => {
 
 const searchUsers = async (req, res) => {
   try {
-    const searchTerm = req.query.searchTerm;
+    const searchQuery = req.query.searchQuery;
     const {user} = req.user;
 
     if(!user){
@@ -232,8 +264,8 @@ const searchUsers = async (req, res) => {
         { _id: { $ne: user._id } }, // Exclude the current user
         {
           $or: [
-            { email: { $regex: new RegExp(searchTerm, 'i') } }, // Case-insensitive email search
-            { full_name: { $regex: new RegExp(searchTerm, 'i') } }, // Case-insensitive full_name search
+            { email: { $regex: new RegExp(searchQuery, 'i') } }, // Case-insensitive email search
+            { full_name: { $regex: new RegExp(searchQuery, 'i') } }, // Case-insensitive full_name search
           ],
         },
       ],
@@ -267,4 +299,4 @@ String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
-module.exports = { signUp, signin, updateProfile, addFriend, getAllFriends, searchUsers };
+module.exports = { signUp, signin, updateProfile, addFriend, getAllFriends, searchUsers, getProfileDetails };
