@@ -6,7 +6,7 @@ const verifyToken = require('../middleware/verifyToken');
 
 userRouter.post("/api/signup", signUp);
 userRouter.post("/api/signin", signin);
-userRouter.patch("/api/update-profile", updateProfile);
+userRouter.patch("/api/update-profile", [verifyToken] ,updateProfile);
 userRouter.post("/api/add-friend", [verifyToken] , addFriend);
 //NOTE - get friends of current logged in user
 userRouter.get("/api/get-all-friends", [verifyToken] , getAllFriends);

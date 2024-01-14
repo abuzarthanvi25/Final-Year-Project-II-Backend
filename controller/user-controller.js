@@ -95,7 +95,7 @@ const signin = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const user = await users.findOne({ _id: req.query.id });
+    const {user} = req.user;
 
     if(!user){
       return res.status(400).send({
@@ -141,7 +141,7 @@ const updateProfile = async (req, res) => {
 const addFriend = async (req, res) => {
   try {
     const { friend_id } = req.query;
-    const { user } = req.body;
+    const { user } = req.user;
 
     const currentUser = await users.findOne({ _id: user?._id });
 
@@ -182,7 +182,7 @@ const addFriend = async (req, res) => {
 
 const getAllFriends = async (req, res) => {
   try {
-    const { user: userFromBody } = req.body;
+    const { user: userFromBody } = req.user;
 
     const user = await users.findById({ _id: userFromBody?._id});
 
@@ -217,9 +217,9 @@ const getAllFriends = async (req, res) => {
 const searchUsers = async (req, res) => {
   try {
     const searchTerm = req.query.searchTerm;
-    const currentUser = req.body.user;
+    const {user} = req.user;
 
-    if(!currentUser){
+    if(!user){
       res.status(400).json({
         status: false,
         message: 'Invalid Token',
@@ -235,7 +235,7 @@ const searchUsers = async (req, res) => {
 
     const query = {
       $and: [
-        { _id: { $ne: currentUser._id } }, // Exclude the current user
+        { _id: { $ne: user._id } }, // Exclude the current user
         {
           $or: [
             { email: { $regex: new RegExp(searchTerm, 'i') } }, // Case-insensitive email search
