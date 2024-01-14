@@ -95,7 +95,7 @@ const signin = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const user = await users.findOne({ _id: req.query.id });
+    const {user} = req.user;
 
     if(!user){
       return res.status(400).send({
@@ -141,7 +141,7 @@ const updateProfile = async (req, res) => {
 const addFriend = async (req, res) => {
   try {
     const { friend_id } = req.query;
-    const { user } = req.body;
+    const { user } = req.user;
 
     const currentUser = await users.findOne({ _id: user?._id });
 
@@ -182,7 +182,7 @@ const addFriend = async (req, res) => {
 
 const getAllFriends = async (req, res) => {
   try {
-    const { user: userFromBody } = req.body;
+    const { user: userFromBody } = req.user;
 
     const user = await users.findById({ _id: userFromBody?._id});
 
@@ -190,19 +190,13 @@ const getAllFriends = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
         // Populate the friends data
-        const friends = await users.find({ _id: { $in: user.friends } });
-
-        res.status(200).json({
-            status: true,
-            data: { 
-              user,
-              friends
-             },
-        });
+    const friends = await users.find({ _id: { $in: user.friends } });
 
     res.status(200).json({
-      status: true,
-      data: { user },
+        status: true,
+        data: { 
+          friends
+        },
     });
   } catch (error) {
     console.error(error);
@@ -214,8 +208,63 @@ const getAllFriends = async (req, res) => {
   }
 }
 
+const searchUsers = async (req, res) => {
+  try {
+    const searchTerm = req.query.searchTerm;
+    const {user} = req.user;
+
+    if(!user){
+      res.status(400).json({
+        status: false,
+        message: 'Invalid Token',
+      });
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10; // Default page size is 10
+
+    // Calculate skip value based on page and page size
+    const skip = (page - 1) * pageSize;
+
+    const query = {
+      $and: [
+        { _id: { $ne: user._id } }, // Exclude the current user
+        {
+          $or: [
+            { email: { $regex: new RegExp(searchTerm, 'i') } }, // Case-insensitive email search
+            { full_name: { $regex: new RegExp(searchTerm, 'i') } }, // Case-insensitive full_name search
+          ],
+        },
+      ],
+    };
+
+    const searchedUsers = await users.find(query)
+      .select('-password') // Exclude password from the response
+      .skip(skip)
+      .limit(pageSize);
+
+    const totalEntries = await users.countDocuments(query);
+
+    res.status(200).json({
+      status: true,
+      message: `Displaying ${pageSize > totalEntries ? totalEntries : pageSize} of ${totalEntries} users`,
+      data: { users: searchedUsers },
+      page,
+      pageSize,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error searching users',
+      error: error.toString(),
+    });
+  }
+};
+
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
-module.exports = { signUp, signin, updateProfile, addFriend, getAllFriends };
+module.exports = { signUp, signin, updateProfile, addFriend, getAllFriends, searchUsers };

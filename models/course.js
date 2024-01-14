@@ -10,12 +10,22 @@ const course_schema = new mongoose.Schema({
     description: {
         type: String,
         trim: true,
+        required: true,
     },
     course_thumbnail: {
         type: String,
     },
+    type: {
+        type: String,
+        enum: ["Personal", "Group"],
+        default: "Personal", // Set default value to "Personal"
+        required: true,
+    },
+    members: [{
+        type: Schema.Types.ObjectId,
+        ref: 'users',
+    }],
     notes: [{type: Schema.Types.ObjectId, ref: 'notes'}]
-
 })
 
 //creating collection

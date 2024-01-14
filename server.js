@@ -5,11 +5,12 @@ const port = process.env.PORT;
 
 require('./config/db');
 const { socketInstance } = require("./config/socket")
-const userRouter = require('./router/user-router')
+const userRouter = require('./router/user-router');
+const courseRouter = require('./router/course-router');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use([userRouter])
+app.use([userRouter, courseRouter])
 
 // socketInstance.on("connection", socket => {
 
