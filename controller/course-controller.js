@@ -23,7 +23,7 @@ const createCourse = async (req, res) => {
       description,
       course_thumbnail,
       type,
-      members: type === 'Group' ? members : [], // Include members only for 'Group' type
+      members: type === 'Group' ? members : [user?._id], // Include members only for 'Group' type
       notes: [], // by default 0 notes
     });
 
@@ -56,37 +56,34 @@ const getAllCourses = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const type = req.query.type || null;
 
-    let query = { _id: user._id };
+    let query = {};
+    
     if (type) {
-      query = { ...query, 'type': type };
+      if (type === 'Personal') {
+        query = { type, members: user._id };
+      } else {
+        query = { type };
+      }
     }
 
-    const userWithCourses = await users
-      .findOne(query)
-      .populate({
-        path: 'courses',
-        options: {
-          limit: limit,
-          skip: (page - 1) * limit,
-        },
-      });
+    const coursesData = await courses
+      .find(query)
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .populate('members'); // Assuming you want to populate only some fields of the members
 
-    if (!userWithCourses) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const totalCourses = userWithCourses.courses.length;
+    const totalCourses = await courses.countDocuments(query);
 
     res.status(200).json({
       status: true,
       message: `Showing ${limit > totalCourses ? totalCourses : limit} courses of total ${totalCourses} courses`,
-      data: { courses: userWithCourses.courses },
+      data: { courses: coursesData },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       status: false,
-      message: 'Error fetching user courses',
+      message: 'Error fetching courses',
       error: error.toString(),
     });
   }

@@ -129,7 +129,9 @@ const updateProfile = async (req, res) => {
   try {
     const {user} = req.user;
 
-    if(!user){
+    const userFromDb = await users.findById({_id: user._id});
+
+    if(!userFromDb){
       return res.status(400).send({
         status: false,
         message: "User not found",
