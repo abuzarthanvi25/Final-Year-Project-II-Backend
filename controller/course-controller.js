@@ -51,19 +51,35 @@ const createCourse = async (req, res) => {
 //NOTE - Get Courses for current user
 const getAllCourses = async (req, res) => {
   try {
-    // Assuming you have an authentication middleware that attaches the current user to the request
-    const {user} = req.user;
+    const { user } = req.user;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const type = req.query.type || null;
 
-    // Find the user by ID and populate the courses field
-    const userWithCourses = await users.findById(user._id).populate('courses');
+    let query = { _id: user._id };
+    if (type) {
+      query = { ...query, 'type': type };
+    }
+
+    const userWithCourses = await users
+      .findOne(query)
+      .populate({
+        path: 'courses',
+        options: {
+          limit: limit,
+          skip: (page - 1) * limit,
+        },
+      });
 
     if (!userWithCourses) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const totalCourses = userWithCourses.courses.length;
+
     res.status(200).json({
       status: true,
-      message: "Courses for the current user get successfully",
+      message: `Showing ${limit > totalCourses ? totalCourses : limit} courses of total ${totalCourses} courses`,
       data: { courses: userWithCourses.courses },
     });
   } catch (error) {
@@ -75,6 +91,8 @@ const getAllCourses = async (req, res) => {
     });
   }
 };
+
+
 
 const updateCourseById = async (req, res) => {
   try {
