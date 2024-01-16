@@ -23,7 +23,7 @@ const createCourse = async (req, res) => {
       description,
       course_thumbnail,
       type,
-      members: type === 'Group' ? members : [], // Include members only for 'Group' type
+      members: type === 'Group' ? members : [user?._id], // Include members only for 'Group' type
       notes: [], // by default 0 notes
     });
 
@@ -51,30 +51,45 @@ const createCourse = async (req, res) => {
 //NOTE - Get Courses for current user
 const getAllCourses = async (req, res) => {
   try {
-    // Assuming you have an authentication middleware that attaches the current user to the request
-    const {user} = req.user;
+    const { user } = req.user;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const type = req.query.type || null;
 
-    // Find the user by ID and populate the courses field
-    const userWithCourses = await users.findById(user._id).populate('courses');
-
-    if (!userWithCourses) {
-      return res.status(404).json({ error: 'User not found' });
+    let query = {};
+    
+    if (type) {
+      if (type === 'Personal') {
+        query = { type, members: user._id };
+      } else {
+        query = { type };
+      }
     }
+
+    const coursesData = await courses
+      .find(query)
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .populate('members'); // Assuming you want to populate only some fields of the members
+
+    const totalCourses = await courses.countDocuments(query);
 
     res.status(200).json({
       status: true,
-      message: "Courses for the current user get successfully",
-      data: { courses: userWithCourses.courses },
+      message: `Showing ${limit > totalCourses ? totalCourses : limit} courses of total ${totalCourses} courses`,
+      data: { courses: coursesData },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       status: false,
-      message: 'Error fetching user courses',
+      message: 'Error fetching courses',
       error: error.toString(),
     });
   }
 };
+
+
 
 const updateCourseById = async (req, res) => {
   try {
