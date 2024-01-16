@@ -89,8 +89,6 @@ const getAllCourses = async (req, res) => {
   }
 };
 
-
-
 const updateCourseById = async (req, res) => {
   try {
     const { id: course_id } = req.params;
@@ -129,7 +127,7 @@ const deleteCourseById = async (req, res) => {
     } catch (e) {
       console.error(e);
       return res.status(400).send({
-        success: false,
+        status: false,
         message: "Something went wrong",
         data: null
       });
