@@ -4,7 +4,7 @@ require("dotenv").config();
 
 const createNote = async (req, res) => {
   try {
-    const { data, course_id } = req.body;
+    const { data, course_id, title } = req.body;
     const { user } = req.user;
 
     if (!user) {
@@ -15,7 +15,7 @@ const createNote = async (req, res) => {
     }
 
     // Validate required fields
-    const requiredFields = ['data', 'course_id'];
+    const requiredFields = ['data', 'course_id', 'title'];
     for (const field of requiredFields) {
       if (!req.body[field]) {
         return res.status(400).json({
@@ -38,6 +38,7 @@ const createNote = async (req, res) => {
     const newNote = new notes({
       data,
       course: course_id,
+      title
     });
 
     // Populate course_title from the associated course
@@ -152,21 +153,51 @@ const updateNotesById = async (req, res) => {
   }
 }
 
-const deleteNotesById = async (req, res) => {
+const deleteNoteById = async (req, res) => {
   try {
+    const { note_id } = req.params;
 
-  } catch (e) {
-    console.error(e);
-    return res.status(400).send({
+    // Check if note_id is provided
+    if (!note_id) {
+      return res.status(400).json({
+        status: false,
+        message: 'Note ID is required',
+      });
+    }
+
+    // Check if the note exists
+    const note = await notes.findById(note_id);
+    if (!note) {
+      return res.status(404).json({
+        status: false,
+        message: 'Note not found',
+      });
+    }
+
+    // Remove the note reference from the associated course
+    await courses.findByIdAndUpdate(note.course, { $pull: { notes: note_id } });
+
+    // Delete the note
+    await notes.findByIdAndDelete(note_id);
+
+    res.status(200).json({
+      status: true,
+      message: 'Note deleted successfully',
+      data: { note },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
       status: false,
-      message: "Something went wrong",
-      data: null
+      message: 'Error deleting note',
+      error: error.toString(),
     });
   }
-}
+};
+
 
 String.prototype.capitalize = function () {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
-module.exports = { createNote, getAllNotes, getNotesById, updateNotesById, deleteNotesById };
+module.exports = { createNote, getAllNotes, getNotesById, updateNotesById, deleteNoteById };

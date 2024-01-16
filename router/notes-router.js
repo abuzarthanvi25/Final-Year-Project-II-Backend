@@ -1,11 +1,12 @@
 const express = require('express');
-const courseRouter = express.Router();
+const noteRouter = express.Router();
 
-const { createNote, getAllNotes, getNotesById } = require('../controller/notes-controller');
+const { createNote, getAllNotes, getNotesById, deleteNoteById } = require('../controller/notes-controller');
 const verifyToken = require('../middleware/verifyToken');
 
-courseRouter.post("/api/create-note", [verifyToken], createNote);
-courseRouter.get("/api/get-notes/:course_id", [verifyToken], getAllNotes);
-courseRouter.get("/api/get-note-by-id/:note_id", [verifyToken], getNotesById);
+noteRouter.post("/api/create-note", [verifyToken], createNote);
+noteRouter.get("/api/get-notes/:course_id", [verifyToken], getAllNotes);
+noteRouter.get("/api/get-note/:note_id", [verifyToken], getNotesById);
+noteRouter.delete("/api/delete-note/:note_id", [verifyToken], deleteNoteById);
 
-module.exports = courseRouter
+module.exports = noteRouter

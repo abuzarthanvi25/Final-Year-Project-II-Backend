@@ -1,4 +1,5 @@
 const { courses } = require("../models/course");
+const { notes } = require('../models/notes');
 const { users } = require('../models/user');
 require("dotenv").config();
 
@@ -122,17 +123,46 @@ const updateCourseById = async (req, res) => {
 }
 
 const deleteCourseById = async (req, res) => {
-    try {
-    
-    } catch (e) {
-      console.error(e);
-      return res.status(400).send({
+  try {
+    const { course_id } = req.params;
+
+    // Check if course_id is provided
+    if (!course_id) {
+      return res.status(400).json({
         status: false,
-        message: "Something went wrong",
-        data: null
+        message: 'Course ID is required',
       });
     }
-}
+
+    // Check if the course exists
+    const course = await courses.findById(course_id);
+    if (!course) {
+      return res.status(404).json({
+        status: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Delete the course
+    await courses.findByIdAndDelete(course_id);
+
+    // Remove the course reference from associated notes
+    await notes.updateMany({ course: course_id }, { $unset: { course_title: 1 } });
+
+    res.status(200).json({
+      status: true,
+      message: 'Course deleted successfully',
+      data: { course },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error deleting course',
+      error: error.toString(),
+    });
+  }
+};
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
