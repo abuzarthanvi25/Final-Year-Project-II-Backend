@@ -1,5 +1,6 @@
 const { notes } = require("../models/notes");
 const { courses } = require("../models/course");
+const { default: mongoose } = require("mongoose");
 require("dotenv").config();
 
 const createNote = async (req, res) => {
@@ -109,7 +110,7 @@ const getNotesById = async (req, res) => {
   try {
     const { note_id } = req.params;
 
-    if(!note_id){
+    if (!note_id) {
       return res.status(404).json({
         success: false,
         message: 'note_id is required',
@@ -141,14 +142,42 @@ const getNotesById = async (req, res) => {
 }
 
 const updateNotesById = async (req, res) => {
-  try {
+  const { title, data } = req.body;
+  const { note_id } = req.params;
 
-  } catch (e) {
-    console.error(e);
-    return res.status(400).send({
-      status: false,
-      message: "Something went wrong",
-      data: null
+  try {
+    // Validate if the note_id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(note_id)) {
+      return res.status(400).json({ message: 'Invalid note_id' });
+    }
+
+    // Find the note by ID
+    const existingNote = await notes.findById(note_id);
+
+    // Check if the note exists
+    if (!existingNote) {
+      return res.status(404).json({ message: 'Note not found' });
+    }
+
+    // Update the title and data fields if provided
+    if (title) {
+      existingNote.title = title;
+    }
+
+    if (data) {
+      existingNote.data = data;
+    }
+
+    // Save the updated note
+    const updatedNote = await existingNote.save();
+
+    res.json({ message: 'Note updated successfully', updatedNote, status: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching note',
+      error: error.toString(),
     });
   }
 }

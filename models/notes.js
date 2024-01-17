@@ -6,16 +6,12 @@ const notes_schema = new mongoose.Schema({
         type: String
     },
     data: {
-        type: Object,
+        type: String,
     },
     course: {
         type: Schema.Types.ObjectId,
         ref: 'courses',
         required: true,
-    },
-    course_title: {
-        type: String,
-        // No need to explicitly set required, as it will be populated from the course model
     },
 },
     {
