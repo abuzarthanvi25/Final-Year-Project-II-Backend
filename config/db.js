@@ -8,7 +8,7 @@ const connectDB = async () => {
         useNewUrlParser: true,
         dbName: 'final_year_project_II',
     });
-      console.log(`Database Connected Successfully: ${conn.connection}`);
+      console.log(`Database Connected Successfully: ${conn.modelNames()}`);
     } catch (error) {
       console.log(error);
       process.exit(1);

@@ -8,11 +8,12 @@ const { connectDB } = require('./config/db');
 const { socketInstance } = require("./config/socket")
 const userRouter = require('./router/user-router');
 const courseRouter = require('./router/course-router');
+const noteRouter = require('./router/notes-router');
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use([userRouter, courseRouter])
+app.use([userRouter, courseRouter, noteRouter])
 
 
 connectDB().then(() => {
