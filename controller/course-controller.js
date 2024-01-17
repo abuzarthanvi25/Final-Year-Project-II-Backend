@@ -92,7 +92,7 @@ const getAllCourses = async (req, res) => {
 
 const updateCourseById = async (req, res) => {
   try {
-    const { id: course_id } = req.params;
+    const { course_id } = req.params;
     const { members, notes, ...updatedFields } = req.body;
 
     // Check if members or notes fields are provided in the request body
@@ -147,7 +147,7 @@ const deleteCourseById = async (req, res) => {
     await courses.findByIdAndDelete(course_id);
 
     // Remove the course reference from associated notes
-    await notes.updateMany({ course: course_id }, { $unset: { course_title: 1 } });
+    await notes.deleteMany({ course: course_id });
 
     res.status(200).json({
       status: true,
