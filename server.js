@@ -13,7 +13,9 @@ const noteRouter = require('./router/notes-router');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use([userRouter, courseRouter, noteRouter])
+app.use([userRouter, courseRouter, noteRouter]);
+
+app.get('/', (_, res) => res.json({message: 'Status Healthy kela'}));
 
 
 connectDB().then(() => {
