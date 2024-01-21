@@ -13,6 +13,10 @@ const notes_schema = new mongoose.Schema({
         ref: 'courses',
         required: true,
     },
+    is_summarized: {
+        type: Schema.Types.Boolean,
+        default: false,
+    }
 },
     {
         timestamps: {
