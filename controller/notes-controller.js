@@ -1,7 +1,9 @@
 const { notes } = require("../models/notes");
 const { courses } = require("../models/course");
 const { default: mongoose } = require("mongoose");
+const { summarizeText, handleTransformSummary } = require('../utils/text-summarization');
 require("dotenv").config();
+const { readTextFromImage, handleTransformResponse } = require('../utils/image-ocr');
 
 const createNote = async (req, res) => {
   try {
@@ -224,9 +226,81 @@ const deleteNoteById = async (req, res) => {
   }
 };
 
+const summarizeNotes = async (req, res) => {
+  try {
+    const requiredFields = ['course_title', 'data'];
+    const {course_title, data} = req.body;
+    const {note_id} = req.params;
+
+    for (const field of requiredFields) {
+      if (!req.body[field]) {
+        return res.status(400).send({
+          status: false,
+          message: `${field.replace('_', ' ').capitalize()} is required`,
+        });
+      }
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(note_id)) {
+      return res.status(400).json({ message: 'Invalid note_id' });
+    }
+
+    // Find the note by ID
+    const existingNote = await notes.findById(note_id);
+
+    // Check if the note exists
+    if (!existingNote) {
+      return res.status(404).json({ message: 'Note not found' });
+    }
+
+    const {summary, error} = await summarizeText(course_title, JSON.parse(data));
+
+    await notes.findByIdAndUpdate({_id: note_id}, {data: JSON.stringify(handleTransformSummary(summary)), is_summarized: true});
+
+    if(error){
+      return res.status(400).json({
+        status: false,
+        message: 'Error summarizing notes',
+        error: error
+      });
+    }
+
+    return res.json({
+      status: true,
+      message: 'Note summarized successfully',
+      data: summary
+    })
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error deleting note',
+      error: error.toString(),
+    });
+  }
+}
+
+const getTextFromImageWithOCR = async (req, res) => {
+  try {
+    const imageBuffer = req.file.buffer;
+    const result = await readTextFromImage(imageBuffer);
+    res.json({ 
+      status: true,
+      message: 'Text extracted from image successfully',
+      data: JSON.stringify(handleTransformResponse(result))
+     });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      status: false,
+      message: 'Error extracting text from note',
+      error: error.toString(),
+    });
+  }
+}
 
 String.prototype.capitalize = function () {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
-module.exports = { createNote, getAllNotes, getNotesById, updateNotesById, deleteNoteById };
+module.exports = { createNote, getAllNotes, getNotesById, updateNotesById, deleteNoteById, summarizeNotes, getTextFromImageWithOCR };
