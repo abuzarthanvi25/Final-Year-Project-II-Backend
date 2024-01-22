@@ -10,7 +10,15 @@ const userRouter = require('./router/user-router');
 const courseRouter = require('./router/course-router');
 const noteRouter = require('./router/notes-router');
 
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: ['http://127.0.0.1:5173/', 'https://final-year-project-ii-frontend.vercel.app/'],
+  methods: ['GET', 'HEAD', 'DELETE', 'PUT', 'POST'],
+  allowedHeaders: '*',
+};
+
+// Enable CORS for all routes
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use([userRouter, courseRouter, noteRouter]);
