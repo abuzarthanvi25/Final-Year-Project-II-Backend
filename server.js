@@ -18,7 +18,7 @@ const corsOptions = {
 };
 
 // Enable CORS for all routes
-app.use(cors(corsOptions));
+app.use(cors(true));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use([userRouter, courseRouter, noteRouter]);
