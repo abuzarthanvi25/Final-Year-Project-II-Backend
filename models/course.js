@@ -21,10 +21,19 @@ const course_schema = new mongoose.Schema({
         default: "Personal", // Set default value to "Personal"
         required: true,
     },
-    members: [{
-        type: Schema.Types.ObjectId,
-        ref: 'users',
-    }],
+    members: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'users',
+        }],
+        validate: {
+            validator: function (members) {
+                // Ensure that the number of members does not exceed 5
+                return members.length <= 5;
+            },
+            message: 'A group course can have a maximum of 5 members',
+        },
+    },
     notes: [{type: Schema.Types.ObjectId, ref: 'notes'}]
 })
 

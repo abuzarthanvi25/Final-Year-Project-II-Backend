@@ -11,7 +11,7 @@ const user_schema = new mongoose.Schema({
         type: String,
         trim: true,
         required: true,
-        unique:true
+        unique: true
     },
     password: {
         type: String,
@@ -27,15 +27,19 @@ const user_schema = new mongoose.Schema({
         trim: true,
     },
     profile_picture: {
-        type: String,
+        public_id: {
+            type: String,
+        },
+        url: {
+            type: String,
+        },
     },
-    friends: [{type: Schema.Types.ObjectId, ref: 'users'}],
-    courses: [{type: Schema.Types.ObjectId, ref: 'courses'}],
-
-})
+    friends: [{ type: Schema.Types.ObjectId, ref: 'users' }],
+    courses: [{ type: Schema.Types.ObjectId, ref: 'courses' }],
+});
 
 //creating collection
-const users = new mongoose.model('users', user_schema)
+const users = new mongoose.model('users', user_schema);
 
 //export collection
 module.exports = { users };
