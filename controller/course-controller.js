@@ -6,7 +6,7 @@ require("dotenv").config();
 
 const createCourse = async (req, res) => {
   try {
-    const { title, description, course_thumbnail, type, members } = req.body;
+    const { title, description, course_thumbnail, type, members = [] } = req.body;
     const { user } = req.user;
 
     const currentUser = await users.findById(user._id);

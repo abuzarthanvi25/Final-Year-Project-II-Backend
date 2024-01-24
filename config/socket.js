@@ -1,6 +1,6 @@
-const socketInstance = require("socket.io")(parseInt(process.env.PORT)+1, {
+const socketInstance = require("socket.io")(parseInt(process.env.SOCKET_PORT), {
     cors: {
-      origin: `http://localhost:${process.env.PORT}`,
+      origin: process.env.FRONTEND_URL,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     },
 });
