@@ -98,15 +98,11 @@ const getAllCourses = async (req, res) => {
 const updateCourseById = async (req, res) => {
   try {
     const { course_id } = req.params;
-    const { members, notes, ...updatedFields } = req.body;
-
-    // Check if members or notes fields are provided in the request body
-    if (members || notes) {
-      return res.status(400).json({ error: 'Members and notes fields are non-editable' });
-    }
+    const {user} = req.user
+    const { members = [], notes, type, description, title } = req.body;
 
     // Update the course excluding members and notes fields
-    const updatedCourse = await courses.findByIdAndUpdate({_id: course_id}, updatedFields);
+    const updatedCourse = await courses.findByIdAndUpdate({_id: course_id}, {members: [...members, user?._id], notes, type, description, title});
 
     if (!updatedCourse) {
       return res.status(404).json({ error: 'Course not found' });

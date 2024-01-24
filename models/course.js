@@ -12,9 +12,6 @@ const course_schema = new mongoose.Schema({
         trim: true,
         required: true,
     },
-    course_thumbnail: {
-        type: String,
-    },
     type: {
         type: String,
         enum: ["Personal", "Group"],
