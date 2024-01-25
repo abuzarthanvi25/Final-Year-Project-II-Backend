@@ -3,6 +3,15 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const { generateToken } = require('../utils/jwt-helpers');
 
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  timeout: 600000,
+});
+
 const signUp = async (req, res) => {
   try {
     const requiredFields = ['full_name', 'email', 'password'];
@@ -95,11 +104,20 @@ const signin = async (req, res) => {
 
 const getProfileDetails = async (req, res) => {
   try {
-    const {user} = req.user;
+    const { user } = req.user;
 
-    const userDetails = await users.findById({_id: user._id}).populate('friends').populate('courses');
-    
-    if(!user || !userDetails){
+    const userDetails = await users.findById({ _id: user._id })
+      .populate({
+        path: 'friends',
+        model: 'users',
+      })
+      .populate({
+        path: 'courses',
+        model: 'courses',
+        match: { type: 'Personal' }, // Filter courses based on type
+      });
+
+    if (!user || !userDetails) {
       return res.status(400).send({
         status: false,
         message: "User not found",
@@ -108,30 +126,31 @@ const getProfileDetails = async (req, res) => {
 
     return res.status(200).send({
       status: true,
-      message: "User Profile get statusfuly",
+      message: "User Profile get successfully",
       data: {
-        user: userDetails
-      }
+        user: userDetails,
+      },
     });
 
   } catch (error) {
     console.error(error);
-    return res.status(400).send({
+    return res.status(500).send({
       status: false,
       message: "Something went wrong",
       data: null,
-      error: error.toString()
+      error: error.toString(),
     });
   }
-}
+};
+
 
 const updateProfile = async (req, res) => {
   try {
-    const {user} = req.user;
+    const { user } = req.user;
 
-    const userFromDb = await users.findById({_id: user._id});
+    const userFromDb = await users.findById({ _id: user._id });
 
-    if(!userFromDb){
+    if (!userFromDb) {
       return res.status(400).send({
         status: false,
         message: "User not found",
@@ -149,28 +168,52 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const { full_name, phone_number, bio, profile_picture } = req.body;
+    const { full_name, phone_number, bio } = req.body;
 
-    await users.findOneAndUpdate(
-      {
-        _id: user?._id,
-      },
-      { full_name, phone_number, bio, profile_picture }
-    );
+    let updateFields = {
+      full_name,
+      phone_number,
+      bio,
+    };
+
+    // Check if a new profile picture is provided
+    if (req.files && req.files["profile_picture"] && req.files["profile_picture"][0]) {
+      const newProfilePicture = await cloudinary.uploader.upload(
+        `data:image/png;base64,${req.files["profile_picture"][0].buffer.toString("base64")}`
+      );
+
+      if (!newProfilePicture) {
+        return res.status(400).send({
+          status: false,
+          message: "Error while uploading profile picture",
+        });
+      }
+
+      updateFields.profile_picture = {
+        public_id: newProfilePicture.public_id,
+        url: newProfilePicture.url,
+      };
+
+    }
+
+    // Update the user's profile information
+    await users.findOneAndUpdate({ _id: user?._id }, updateFields);
 
     return res.status(200).send({
       status: true,
-      message: "User Profile Updated statusfuly",
+      message: "User Profile Updated successfully",
     });
   } catch (error) {
     console.error(error);
-    return res.status(400).send({
+    return res.status(500).send({
       status: false,
       message: "Something went wrong",
-      error: error.toString()
+      error: error.toString(),
     });
   }
-}
+};
+
+
 
 const addFriend = async (req, res) => {
   try {

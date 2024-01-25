@@ -1,12 +1,22 @@
 const { courses } = require("../models/course");
 const { notes } = require('../models/notes');
 const { users } = require('../models/user');
+const { default: mongoose } = require("mongoose");
 require("dotenv").config();
 
 const createCourse = async (req, res) => {
   try {
-    const { title, description, course_thumbnail, type, members } = req.body;
-    const {user} = req.user;
+    const { title, description, course_thumbnail, type, members = [] } = req.body;
+    const { user } = req.user;
+
+    const currentUser = await users.findById(user._id);
+
+    if (!currentUser) {
+      return res.status(400).send({
+        status: false,
+        message: 'User not found',
+      });
+    }
 
     const requiredFields = ['title', 'description', 'type'];
 
@@ -24,15 +34,18 @@ const createCourse = async (req, res) => {
       description,
       course_thumbnail,
       type,
-      members: type === 'Group' ? members : [user?._id], // Include members only for 'Group' type
+      members: type === 'Group' ? [...members, user?._id] : [user?._id], // Include members only for 'Group' type
       notes: [], // by default 0 notes
     });
 
     await newCourse.save();
 
-    await users.findByIdAndUpdate(user._id, {
-      $push: { courses: newCourse._id },
-    });
+    // Add the course_id to the courses array for all members
+    const memberIds = type === 'Group' ? [user?._id ,members] : [user?._id];
+    await users.updateMany(
+      { _id: { $in: memberIds } },
+      { $push: { courses: newCourse._id } }
+    );
 
     res.status(201).json({
       status: true,
@@ -57,16 +70,8 @@ const getAllCourses = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const type = req.query.type || null;
 
-    let query = {};
+    let query = { type, members: user._id };
     
-    if (type) {
-      if (type === 'Personal') {
-        query = { type, members: user._id };
-      } else {
-        query = { type };
-      }
-    }
-
     const coursesData = await courses
       .find(query)
       .limit(limit)
@@ -93,15 +98,11 @@ const getAllCourses = async (req, res) => {
 const updateCourseById = async (req, res) => {
   try {
     const { course_id } = req.params;
-    const { members, notes, ...updatedFields } = req.body;
-
-    // Check if members or notes fields are provided in the request body
-    if (members || notes) {
-      return res.status(400).json({ error: 'Members and notes fields are non-editable' });
-    }
+    const {user} = req.user
+    const { members = [], notes, type, description, title } = req.body;
 
     // Update the course excluding members and notes fields
-    const updatedCourse = await courses.findByIdAndUpdate({_id: course_id}, updatedFields);
+    const updatedCourse = await courses.findByIdAndUpdate({_id: course_id}, {members: [...members, user?._id], notes, type, description, title});
 
     if (!updatedCourse) {
       return res.status(404).json({ error: 'Course not found' });
@@ -143,6 +144,12 @@ const deleteCourseById = async (req, res) => {
       });
     }
 
+    // Get the list of users having the specified course
+    const usersWithCourse = await users.find({ courses: course_id });
+
+    // Remove the course ID from each user's courses array
+    await Promise.all(usersWithCourse.map(user => user.updateOne({ $pull: { courses: course_id } })));
+
     // Delete the course
     await courses.findByIdAndDelete(course_id);
 
@@ -164,8 +171,72 @@ const deleteCourseById = async (req, res) => {
   }
 };
 
+const addMembers = async (req, res) => {
+  try {
+    const course_id = req.params.course_id;
+    const { members } = req.body;
+    const { user } = req.user;
+
+    if (!course_id) {
+      return res.status(400).json({ error: 'course_id is required', status: false, message: 'Error adding members' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(course_id)) {
+      return res.status(400).json({ error: 'Invalid course_id', status: false, message: 'Error adding members' });
+    }
+
+    const groupCourse = await courses.findOne({ _id: course_id, type: 'Group' });
+    if (!groupCourse) {
+      return res.status(404).json({ error: 'Group course not found', status: false, message: 'Error adding members' });
+    }
+
+    // Ensure that members are friends of the current user
+    const currentUser = await users.findById(user._id).populate('friends');
+    const friendIds = currentUser.friends.map(friend => friend._id.toString());
+    const nonFriendMembers = members.filter(member => !friendIds.includes(member));
+
+    if (nonFriendMembers.length > 0) {
+      return res.status(400).json({
+        error: 'Not all members are friends of the current user',
+        status: false,
+        message: 'Error adding members',
+      });
+    }
+
+    const existingMembers = groupCourse.members.map(member => member.toString());
+    const newMembers = members.filter(member => !existingMembers.includes(member));
+
+    if (groupCourse.members.length + newMembers.length > 5) {
+      return res.status(400).json({
+        error: 'Course member limit exceeded (max 5 members)',
+        status: false,
+        message: 'Error adding members',
+      });
+    }
+
+    groupCourse.members.push(...newMembers);
+    await groupCourse.save();
+
+    await users.updateMany(
+      { _id: { $in: newMembers } },
+      { $addToSet: { courses: course_id } }
+    );
+
+    return res.status(200).json({ message: 'Members added successfully', status: true, data: null });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error adding members',
+      error: error.toString(),
+    });
+  }
+};
+
+
+
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
-module.exports = { createCourse, getAllCourses, updateCourseById, deleteCourseById };
+module.exports = { createCourse, getAllCourses, updateCourseById, deleteCourseById, addMembers };
