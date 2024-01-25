@@ -170,44 +170,34 @@ const updateProfile = async (req, res) => {
 
     const { full_name, phone_number, bio } = req.body;
 
-    let existingProfilePicturePublicId = null;
+    let updateFields = {
+      full_name,
+      phone_number,
+      bio,
+    };
 
-    // Check if the user has an existing profile picture
-    if (userFromDb.profile_picture) {
-      const existingProfilePicture = userFromDb.profile_picture;
-      existingProfilePicturePublicId = existingProfilePicture.public_id;
-    }
+    // Check if a new profile picture is provided
+    if (req.files && req.files["profile_picture"] && req.files["profile_picture"][0]) {
+      const newProfilePicture = await cloudinary.uploader.upload(
+        `data:image/png;base64,${req.files["profile_picture"][0].buffer.toString("base64")}`
+      );
 
-    // Upload the new profile picture to Cloudinary
-    const newProfilePicture = await cloudinary.uploader.upload(
-      `data:image/png;base64,${req.files["profile_picture"][0].buffer.toString("base64")}`
-    );
-
-    if (!newProfilePicture || !req.files["profile_picture"][0]) {
-      return res.status(400).send({
-        status: false,
-        message: "Error while uploading profile picture",
-      });
-    }
-
-    // Update the user's profile information, including the profile picture URL
-    await users.findOneAndUpdate(
-      { _id: user?._id },
-      {
-        full_name,
-        phone_number,
-        bio,
-        profile_picture: {
-          public_id: newProfilePicture.public_id,
-          url: newProfilePicture.url,
-        },
+      if (!newProfilePicture) {
+        return res.status(400).send({
+          status: false,
+          message: "Error while uploading profile picture",
+        });
       }
-    );
 
-    // If an existing profile picture exists, delete it from Cloudinary
-    if (existingProfilePicturePublicId) {
-      await cloudinary.uploader.destroy(existingProfilePicturePublicId);
+      updateFields.profile_picture = {
+        public_id: newProfilePicture.public_id,
+        url: newProfilePicture.url,
+      };
+
     }
+
+    // Update the user's profile information
+    await users.findOneAndUpdate({ _id: user?._id }, updateFields);
 
     return res.status(200).send({
       status: true,
@@ -222,6 +212,7 @@ const updateProfile = async (req, res) => {
     });
   }
 };
+
 
 
 const addFriend = async (req, res) => {
