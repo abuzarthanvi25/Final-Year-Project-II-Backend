@@ -4,7 +4,7 @@ const { users } = require("../models/user");
 
 const createChatRoom = async (req, res) => {
     try {
-        const { members } = req.body;
+        const { members, name } = req.body;
         const { user } = req.user;
 
         const currentUser = await users.findById(user._id)
@@ -16,6 +16,15 @@ const createChatRoom = async (req, res) => {
             });
         }
 
+        const type = members?.length > 2 ? "Group" : "Personal";
+
+        if(type == 'Group' && !name){
+            return res.status(400).send({
+                status: false,
+                message: `Name is Required`,
+            });
+        }
+
         if (!members || !Array.isArray(members) || members.length == 0) {
             return res.status(400).send({
                 status: false,
@@ -23,8 +32,24 @@ const createChatRoom = async (req, res) => {
             });
         }
 
+        const getReceiverName = async () => {
+            if(members[0]){
+                const receiver = await users.findById(members[0]);
+                if(receiver){
+                    return receiver?.full_name
+                }
+            }
+
+            return ''
+    
+        } 
+
+        const receiverName = await getReceiverName();
+
         const newChatRoom = new chatRooms({
             members: [...members, user._id],
+            type: type,
+            name: type == 'Group' ? name : receiverName
         });
 
         await newChatRoom.save();
@@ -60,7 +85,7 @@ const getAllChatRooms = async (req, res) => {
 
         const chatRoom = await chatRooms.find({
             members: { $in: [user._id] },
-        });
+        }).populate("members");
 
         res.status(200).json({
             status: true,

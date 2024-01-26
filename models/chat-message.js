@@ -7,6 +7,7 @@ const chat_message_schema = new mongoose.Schema({
     },
     sender: {
         type: Schema.Types.ObjectId,
+        ref: 'users' // Reference the 'User' model
     },
     message: {
         type: String

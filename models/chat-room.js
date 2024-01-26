@@ -15,6 +15,15 @@ const chat_room_schema = new mongoose.Schema({
             message: 'A chatroom can have a maximum of 5 members',
         },
     },
+    type: {
+        type: String,
+        enum: ["Personal", "Group"],
+        default: "Personal", // Set default value to "Personal"
+        required: true,
+    },
+    name: {
+        type: String,
+    }
 },
 {
     timestamps: true
