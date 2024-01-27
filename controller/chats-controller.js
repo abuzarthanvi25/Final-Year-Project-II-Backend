@@ -1,6 +1,7 @@
 const { chatRooms } = require("../models/chat-room")
 const { chatMessages } = require("../models/chat-message");
 const { users } = require("../models/user");
+const { socketInstance } = require("../config/socket")
 
 const createChatRoom = async (req, res) => {
     try {
@@ -93,7 +94,6 @@ const deleteChatRoomById = async (req, res) => {
     try {
         const { chat_room_id } = req.params;
     
-        // Check if chat_room_id is provided
         if (!chat_room_id) {
           return res.status(400).json({
             status: false,
@@ -101,7 +101,6 @@ const deleteChatRoomById = async (req, res) => {
           });
         }
     
-        // Check if the chatRoom exists
         const chatRoom = await chatRooms.findById(chat_room_id);
         if (!chatRoom) {
           return res.status(404).json({
@@ -112,7 +111,6 @@ const deleteChatRoomById = async (req, res) => {
 
         await chatRooms.findByIdAndDelete(chat_room_id);
 
-        // Remove the messages from the corresponding room
         await chatMessages.deleteMany({ chat_room_id });
     
         res.status(200).json({
@@ -152,6 +150,49 @@ const createMessage = async (req, res) => {
     }
 };
 
+const deleteMessageById = async (req, res) => {
+    try {
+        const { message_id } = req.params;
+        const { user } = req.user;
+        
+        const currentUser = await users.findById(user._id)
+        
+        if (!currentUser) {
+            return res.status(404).send({
+                status: false,
+                message: `User not found`,
+            });
+        }
+
+        if (!message_id) {
+            return res.status(400).json({
+                status: false,
+                message: 'Message ID is required',
+            });
+        }
+        const message = await chatMessages.findById(message_id);
+
+        if (!message) {
+            return res.status(404).json({ error: 'Message not found' });
+        }
+
+        await chatMessages.findByIdAndDelete(message_id);
+
+        res.json({ 
+            status: true,
+            message: 'Message deleted successfully',
+            data: { message },
+         });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: false,
+            message: 'Error deleting message',
+            error: error.toString(),
+        });
+    }
+}
+
 const getMessages = async (req, res) => {
     try {
         const { chat_room_id } = req.params;
@@ -185,5 +226,6 @@ module.exports = {
     getAllChatRooms,
     createMessage,
     getMessages,
-    deleteChatRoomById
+    deleteChatRoomById,
+    deleteMessageById
 }
