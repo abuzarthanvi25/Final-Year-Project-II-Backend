@@ -23,6 +23,14 @@ const chat_room_schema = new mongoose.Schema({
     },
     name: {
         type: String,
+    },
+    image: {
+        public_id: {
+            type: String,
+        },
+        url: {
+            type: String,
+        },
     }
 },
 {

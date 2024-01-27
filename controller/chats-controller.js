@@ -32,24 +32,10 @@ const createChatRoom = async (req, res) => {
             });
         }
 
-        const getReceiverName = async () => {
-            if(members[0]){
-                const receiver = await users.findById(members[0]);
-                if(receiver){
-                    return receiver?.full_name
-                }
-            }
-
-            return ''
-    
-        } 
-
-        const receiverName = await getReceiverName();
-
         const newChatRoom = new chatRooms({
             members: [...members, user._id],
             type: type,
-            name: type == 'Group' ? name : receiverName
+            name: type == 'Group' ? name : ""
         });
 
         await newChatRoom.save();
@@ -102,6 +88,47 @@ const getAllChatRooms = async (req, res) => {
         });
     }
 };
+
+const deleteChatRoomById = async (req, res) => {
+    try {
+        const { chat_room_id } = req.params;
+    
+        // Check if chat_room_id is provided
+        if (!chat_room_id) {
+          return res.status(400).json({
+            status: false,
+            message: 'Chat Room ID is required',
+          });
+        }
+    
+        // Check if the chatRoom exists
+        const chatRoom = await chatRooms.findById(chat_room_id);
+        if (!chatRoom) {
+          return res.status(404).json({
+            status: false,
+            message: 'Room not found',
+          });
+        }
+
+        await chatRooms.findByIdAndDelete(chat_room_id);
+
+        // Remove the messages from the corresponding room
+        await chatMessages.deleteMany({ chat_room_id });
+    
+        res.status(200).json({
+          status: true,
+          message: 'Chat Room deleted successfully',
+          data: { chatRoom },
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({
+          status: false,
+          message: 'Error deleting chat room',
+          error: error.toString(),
+        });
+      }
+}
 
 const createMessage = async (req, res) => {
     try {
@@ -157,5 +184,6 @@ module.exports = {
     createChatRoom,
     getAllChatRooms,
     createMessage,
-    getMessages
+    getMessages,
+    deleteChatRoomById
 }
