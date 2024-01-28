@@ -1,14 +1,13 @@
 const { chatRooms } = require("../models/chat-room")
 const { chatMessages } = require("../models/chat-message");
 const { users } = require("../models/user");
-const { socketInstance } = require("../config/socket")
 
 const createChatRoom = async (req, res) => {
     try {
         const { members, name } = req.body;
         const { user } = req.user;
 
-        const currentUser = await users.findById(user._id)
+        const currentUser = await users.findById(user._id);
 
         if (!currentUser) {
             return res.status(400).send({
@@ -17,26 +16,39 @@ const createChatRoom = async (req, res) => {
             });
         }
 
-        const type = members?.length > 2 ? "Group" : "Personal";
-
-        if(type == 'Group' && !name){
-            return res.status(400).send({
-                status: false,
-                message: `Name is Required`,
-            });
-        }
-
-        if (!members || !Array.isArray(members) || members.length == 0) {
+        if (!members || !Array.isArray(members) || members.length === 0) {
             return res.status(400).send({
                 status: false,
                 message: `Members are required`,
             });
         }
 
+        // Check if a chat room with the same members already exists
+        const existingChatRoom = await chatRooms.findOne({
+            members: { $all: [...members, user._id], $size: members.length + 1 },
+        });
+
+        if (existingChatRoom) {
+            return res.status(400).send({
+                status: false,
+                message: `Chat room with the same members already exists`,
+                data: existingChatRoom
+            });
+        }
+
+        const type = members.length > 1 ? "Group" : "Personal";
+
+        if (type === 'Group' && !name) {
+            return res.status(400).send({
+                status: false,
+                message: `Group Name is Required`,
+            });
+        }
+
         const newChatRoom = new chatRooms({
             members: [...members, user._id],
             type: type,
-            name: type == 'Group' ? name : ""
+            name: type === 'Group' ? name : "",
         });
 
         await newChatRoom.save();
@@ -44,7 +56,7 @@ const createChatRoom = async (req, res) => {
         res.status(201).json({
             status: true,
             message: "Chat room created successfully",
-            data: newChatRoom
+            data: newChatRoom,
         });
     } catch (error) {
         console.error(error);
