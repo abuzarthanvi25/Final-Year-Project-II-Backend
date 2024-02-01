@@ -10,6 +10,10 @@ const handleCollaboration = (socketInstance) => {
             socket.on('send-note-changes', (note_data) => {
                 socket.broadcast.to(note_id).emit("receive-note-changes", note_data)
             })
+
+            socket.on("send-cursor-position", (cursorPosition) => {
+                socket.broadcast.to(note_id).emit("receive-cursor-position", cursorPosition);
+            });
     
             // socket.on("save-note-changes", async (note_data) => {
             //     console.log(note_data, note_id)
