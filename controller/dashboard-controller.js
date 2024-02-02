@@ -20,6 +20,8 @@ const getDashboardStatistics = async (req, res) => {
 
         const totalPersonalCourses = await courses.countDocuments({ ...query, type: "Personal" });
         const totalGroupCourses = await courses.countDocuments({ ...query, type: "Group" });
+        const personalCourses = await courses.find({ ...query, type: "Personal" }).populate("members");
+        const groupCourses = await courses.find({ ...query, type: "Group" }).populate("members");
 
         const allNotesOfCurrentUserResult = await courses.aggregate([
             {
@@ -82,6 +84,8 @@ const getDashboardStatistics = async (req, res) => {
                 totalGroupCourses,
                 allNotesOfCurrentUser,
                 allNotesOfCurrentUserSummarized,
+                personalCourses,
+                groupCourses
             },
         });
 
