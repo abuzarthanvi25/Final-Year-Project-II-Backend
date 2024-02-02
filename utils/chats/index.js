@@ -15,11 +15,28 @@ const getLatestMessages = async (chat_room_id, limit = 10) => {
     }
 };
 
+const onlineUsers = new Map();
+
+const getOnlineUsers = () => {
+    return Array.from(onlineUsers.keys());
+};
+
+
 const handleChats = (socketInstance) => {
     socketInstance.on("connection", socket => {
         socket.on("join room", async (chat_room_id) => {
             socket.join(chat_room_id);
         });
+
+        socket.on("set online", (user_id) => {
+            if(!onlineUsers.has(user_id)){
+                onlineUsers.set(user_id, socket.id);
+            }
+        })
+
+        socket.on("get online users", () => {
+            socketInstance.emit("receive online users", getOnlineUsers())
+        })
 
         socket.on("get room messages", async (chat_room_id) => {
             const allMessages = await getLatestMessages(chat_room_id);
@@ -36,6 +53,10 @@ const handleChats = (socketInstance) => {
             } catch (error) {
                 console.error("Error sending message:", error);
             }
+        });
+
+        socket.on("disconnect room", (user_id) => {
+            onlineUsers.delete(user_id);
         });
     });
 };
