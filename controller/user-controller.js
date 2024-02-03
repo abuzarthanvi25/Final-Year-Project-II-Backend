@@ -143,7 +143,6 @@ const getProfileDetails = async (req, res) => {
   }
 };
 
-
 const updateProfile = async (req, res) => {
   try {
     const { user } = req.user;
@@ -212,8 +211,6 @@ const updateProfile = async (req, res) => {
     });
   }
 };
-
-
 
 const addFriend = async (req, res) => {
   try {

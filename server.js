@@ -13,13 +13,14 @@ const userRouter = require('./router/user-router');
 const courseRouter = require('./router/course-router');
 const noteRouter = require('./router/notes-router');
 const chatRouter = require('./router/chat-router');
+const dashboardRouter = require('./router/dashboard-router');
 const { handleCollaboration } = require("./utils/collaborations");
 const { handleChats } = require("./utils/chats");
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use([userRouter, courseRouter, noteRouter, chatRouter])
+app.use([userRouter, courseRouter, noteRouter, chatRouter, dashboardRouter])
 
 const handleSocketServices = () => {
   handleCollaboration(socketInstance)
