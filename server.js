@@ -31,5 +31,5 @@ connectDB().then(() => {
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running at port http://localhost:${port}`);
   });
-  handleSocketServices();
 })
+handleSocketServices();
